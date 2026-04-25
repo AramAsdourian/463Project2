@@ -1,0 +1,274 @@
+###############################################################################
+#  program name: Project 2
+#
+#  authors:
+#  Aram Asdourian
+#  Matthew wybranski
+#
+#  date: 4/18/2026
+#
+# description:
+# implements dijkstras algorithm to find the best route for aid delivery
+###############################################################################
+import random
+import copy
+import heapq
+
+class graph():
+    def __init__(self, graph):
+        self.graph = graph
+
+    def Dijkstras(self, start):
+        # initializes the distances dictionary with each value defaulting to infinity
+        distances = {node: float('inf') for node in self.graph.keys()}
+        # sets starting node to distance 0
+        distances[start] = 0
+
+        #marks all paths taken so the optimal path can be returned later
+        paths = {node: None for node in self.graph.keys()}
+
+        # initializes a list of neighbors with the first node
+        neighbors = [(0, start)]
+        # creates a set that marks which neighbors have already been visited
+        visited = set()
+
+        # keeps popping elements from the heap until its empty
+        while len(neighbors) > 0:
+            #gets the distance and node from the next item
+            dist, node = heapq.heappop(neighbors)
+
+            #skips if node is in visited
+            if node in visited:
+                continue
+
+            #adds the current node to visited
+            visited.add(node)
+
+            # iterates over each neighbor of the current node
+            for neighbor in self.graph[node]:
+                # gets the distance to reach the neighbor
+                newDist = self.graph[node][neighbor] + dist
+
+                #if a new best distance is found add it to the dict and lists
+                if newDist < distances[neighbor]:
+                    #sets the new shortest distance to the node
+                    distances[neighbor] = newDist
+                    #sets the path taken to the node
+                    paths[neighbor] = node
+                    #adds the neighbor to neighbors
+                    heapq.heappush(neighbors, (newDist, neighbor))
+        return distances, paths
+
+    def getPath(self, start, end):
+        #gets the list of paths from dijkstras
+        distances, paths = self.Dijkstras(start)
+
+        #gets the path based off the endpoint
+        path = []
+        current = end
+        #reversely builds the path starting from the endpoint, stops when it reaches the starting node
+        while current != None:
+            path.append(current)
+            current = paths[current]
+
+        #reverses the path to get the correct order
+        path.reverse()
+
+        #returns the path and the distance to get there
+        return (path, distances[end])
+
+    def randEvent(self):
+        # --- RANDOM EVENT SYSTEM ---
+        events = [
+            ("military presence has increased on this road", 8),
+            ("road damage has slowed travel", 3),
+            ("weather conditions improved travel", -3),
+            ("traffic congestion increased", 4),
+            ("aid workers cleared obstacles", -4),
+            ("bombs have been reported on this road", 10),
+            ("checkpoint inspections caused delays", 5),
+            ("fuel shortages reduced vehicle movement", 3),
+            ("bridge repairs reopened faster access", -6),
+            ("heavy rain caused flooding on this road", 5),
+            ("local volunteers repaired potholes", -3),
+            ("security patrols made travel safer", -5),
+            ("vehicle accident blocked part of the road", 4),
+            ("temporary detour increased route time", 3),
+            ("construction crews improved road conditions", -3),
+            ("civil unrest reported nearby", 2),
+            ("debris from storms slowed movement", 3),
+            ("new traffic control measures reduced delays", -4),
+            ("landslide partially blocked this road", 6),
+            ("medical convoy cleared congestion ahead", -5)
+        ]
+
+        #set to track visited nodes
+        visited = set()
+        # loop through edges and randomly apply events
+        for node in self.graph:
+            for neighbor in self.graph[node]:
+                #checks if a random event has already happened and rolls a 50/50 random choice
+                if (node, neighbor) not in visited and random.choice([True, False]):
+
+                    #randomly picks a event message and weight change
+                    event, change = random.choice(events)
+
+                    # apply change but prevent negative weights
+                    new_weight = max(1, self.graph[node][neighbor] + change)
+
+                    #prints event message
+                    print(f"{node} <--> {neighbor}: {event}, "
+                          f"{'+' if change >= 0 else ''}{change} weight")
+
+                    #updates new weight and adds to visited
+                    self.graph[node][neighbor] = new_weight
+                    self.graph[neighbor][node] = new_weight
+                    visited.add((node, neighbor))
+                    visited.add((neighbor,node))
+        return
+
+
+#graph containing nodes representing country landmarks
+#weight representing risk level of taking a path between landmarks
+roadSystemDict = {
+    "Aid Center": {
+        "Major City": 7,
+        "Checkpoint 2": 3,
+        "City 1": 3,
+        "Route 3": 3
+    },
+
+    "Route 1": {
+        "Desert": 5,
+        "Checkpoint 1": 5,
+        "Park": 3
+    },
+
+    "Route 3": {
+        "Major City": 8,
+        "City 1": 3,
+        "City 2": 3,
+        "Aid Center": 3
+    },
+
+    "City 1": {
+        "Park": 7,
+        "Town 1": 7,
+        "Route 3": 3,
+        "Aid Center": 3
+    },
+
+    "City 2": {
+        "Route 3": 3,
+        "Park": 5
+    },
+
+    "Park": {
+        "City 2": 5,
+        "Route 1": 3,
+        "City 1": 7
+    },
+
+    "Desert": {
+        "Town 1": 7,
+        "Route 1": 5
+    },
+
+    "Checkpoint 1": {
+        "Town 1": 1,
+        "Route 1": 5
+    },
+
+    "Town 1": {
+        "Checkpoint 2": 4,
+        "Beach": 5,
+        "Desert": 7,
+        "City 1": 7
+    },
+
+    "Major City": {
+        "Forest": 7,
+        "Route 3": 8,
+        "Aid Center": 7
+    },
+
+    "Forest": {
+        "Checkpoint 2": 3,
+        "Town 2": 4,
+        "Major City": 7
+    },
+
+    "Checkpoint 2": {
+        "Route 4": 1,
+        "Aid Center": 3,
+        "Forest": 3,
+        "Town 1": 4
+    },
+
+    "Beach": {
+        "Route 4": 3,
+        "Town 1": 5
+    },
+
+    "Route 4": {
+        "Town 2": 3,
+        "Checkpoint 2": 1,
+        "Beach": 3
+    },
+
+    "Town 2": {
+        "Forest": 4,
+        "Route 4": 3
+    }
+}
+
+roadSystemGraph = graph(copy.deepcopy(roadSystemDict))
+
+#prints welcome message for user on first run
+print("--------------------------------------------------------------------------------")
+print("Welcome, User, to the Aid Transportation - Risk Assessment simulation."
+      "\nThis simulation is used to gather information on the best paths to take for aid transportation in times of war and/or crisis"
+      "\nin a unspecified state/country using Dijkstra's algorithm."
+      "\nrandom events may occur and affect the risk level between some paths.")
+print("--------------------------------------------------------------------------------")
+
+#keeps letting user make deliveries while check = true
+check = True
+while check:
+    #first, prints the available locations for the user to make a delivery to
+    print("\n--- List of Locations in the simulation ---")
+    for key in roadSystemGraph.graph:
+        print(key)
+    print("--------------------------------------------\n")
+
+    #resets the graph and does another round of random events
+    print("\n--- Random Events Affecting Routes ---")
+    roadSystemGraph = graph(copy.deepcopy(roadSystemDict))
+    roadSystemGraph.randEvent()
+    print("--------------------------------------\n")
+
+    #gets the users input
+    newGoal = input("\nYou can continue the program by selecting another end location (see above list) or press q to exit: ")
+
+    #keeps asking for input until its valid
+    while newGoal not in roadSystemGraph.graph and newGoal != "q":
+        print(
+            "\nSorry, but that is not one of the locations in the simulation.\nMake sure you are typing in the location"
+            " as it shows up in the list exactly (case-sensitive).\n")
+        newGoal = input("Enter the delivery location or enter 'q' to exit:")
+
+
+    #exits program if the user enters q
+    if newGoal == "q":
+        print("\nThank you for using this simulation program!")
+        check = False
+        continue
+
+    #gets the path and risk level to the destination location
+    path, risk = roadSystemGraph.getPath("Aid Center", newGoal)
+
+    #prints the data for the user
+    print(f"Path to take: {path}")
+    print(f"Risk assessment level: {risk}\n")
+    input("press enter to continue.")
+    print("--------------------------------------------------------------------------------")
